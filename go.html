@@ -1,0 +1,54 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Redirecting…</title>
+
+  <!-- GA4 -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-REPLACE_ME"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-REPLACE_ME');
+  </script>
+</head>
+<body>
+<script>
+  const params = new URLSearchParams(location.search);
+  const c = (params.get('c') || '').trim();
+
+  if (!c) {
+    document.body.innerText = "Missing ?c=campaign";
+    throw new Error("Missing campaign");
+  }
+
+  fetch('./config.json', { cache: "no-store" })
+    .then(r => r.json())
+    .then(cfg => {
+      const campaign = cfg[c];
+      if (!campaign) {
+        document.body.innerText = "Campaign not found: " + c;
+        return;
+      }
+      if (!campaign.active) {
+        document.body.innerText = "Campaign paused: " + c;
+        return;
+      }
+
+      // Track scan
+      gtag('event', 'qr_scan', {
+        campaign_id: c,
+        destination: campaign.url
+      });
+
+      // Redirect
+      setTimeout(() => location.replace(campaign.url), 200);
+    })
+    .catch(err => {
+      document.body.innerText = "Error loading config.json";
+      console.error(err);
+    });
+</script>
+</body>
+</html>
